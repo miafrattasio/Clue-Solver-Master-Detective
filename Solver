@@ -1,0 +1,175 @@
+class ClueSolver:
+  def __init__(self):
+      self.possible_people = ["Scarlett", "Green", "White", "Peacock", "Mustard", "Plum",
+                              "Peach", "Gray", "Brunette", "Rose"]
+      self.possible_weapons = ["Candlestick", "Knife", "Lead Pipe", "Revolver", "Rope",
+                               "Wrench", "Horseshoe", "Poison"]
+      self.possible_rooms = ["Carriage House", "Conservatory", "Kitchen", "Trophy Room",
+                             "Dining Room", "Drawing Room", "Gazebo", "Courtyard",
+                             "Fountain", "Library", "Billiard Room", "Studio"]
+      self.initialize()
+
+      # Tracking dictionaries
+      self.asked = {}  # Records who asked for what
+      self.shown = {}  # Records what each player may have shown
+      self.shown_to = {}  # Records what you have shown to people
+      self.possibilities = {}  # Records what each player may have
+      self.other_player_possibilities = {}  # Records other player possibilities
+
+  def initialize(self):
+      self.remaining_people = self.possible_people.copy()
+      self.remaining_weapons = self.possible_weapons.copy()
+      self.remaining_rooms = self.possible_rooms.copy()
+
+  def update(self, card, player):
+      found = False
+
+      for item in self.remaining_people:
+          if card.lower() in item.lower():
+              self.remaining_people.remove(item)
+              found = True
+              break
+
+      if not found:
+          for item in self.remaining_weapons:
+              if card.lower() in item.lower():
+                  self.remaining_weapons.remove(item)
+                  found = True
+                  break
+
+      if not found:
+          for item in self.remaining_rooms:
+              if card.lower() in item.lower():
+                  self.remaining_rooms.remove(item)
+                  found = True
+                  break
+
+      if found:
+          if player not in self.shown:
+              self.shown[player] = [card]
+          else:
+              self.shown[player].append(card)
+
+          if player not in self.possibilities:
+              self.possibilities[player] = [card]
+          else:
+              self.possibilities[player].append(card)
+
+  def get_possible_solutions(self):
+      return self.remaining_people, self.remaining_weapons, self.remaining_rooms
+
+  def ask(self, person, weapon, room, player):
+      if player not in self.asked:
+          self.asked[player] = (person, weapon, room)
+
+  def record_shown(self, player, cards):
+      if player not in self.shown_to:
+          self.shown_to[player] = cards
+      else:
+          self.shown_to[player].extend(cards)
+
+  def check_player_possible_cards(self, player):
+      if player in self.possibilities:
+          print(f"{player} may have the following cards:")
+          for card in self.possibilities[player]:
+              print(card)
+      else:
+          print(f"No information available for player {player}.")
+
+  def check_other_player_possibilities(self, player):
+      if player in self.other_player_possibilities:
+          print(f"Possible cards for player {player}:")
+          for card in self.other_player_possibilities[player]:
+              print(card)
+      else:
+          print(f"No information available for player {player}.")
+
+
+def main():
+  num_players = int(input("How many people are playing the game? "))
+  player_names = []
+  player_cards = {}
+
+  solver = ClueSolver()
+
+  name = input("Enter your name: ").strip()
+  player_names.append(name)
+  num_cards = int(input(f"How many cards does {name} have? "))
+  cards = []
+  for j in range(num_cards):
+      card = input(f"Enter card {j + 1} for {name}: ").strip().capitalize()
+      cards.append(card)
+      solver.update(card, name)
+  player_cards[name] = cards
+
+  for i in range(1, num_players):
+      name = input(f"Enter player {i + 1}'s name: ").strip()
+      player_names.append(name)
+      player_cards[name] = []
+
+  while True:
+      print("\nSelect an action:")
+      print("1. Enter seen card")
+      print("2. Enter shown card")
+      print("3. Enter Other Player Possibility")
+      print("4. Check possibilities")
+      print("5. Check other player’s cards")
+      print("6. Check what I have shown to a player")
+      print("7. Check other player possibilities")
+      print("8. Exit")
+
+      action = input().strip()
+
+      if action == '1':
+          print("Who's card is this?")
+          owner = input().strip()
+          card = input("Enter the card: ").strip().capitalize()
+          solver.update(card, owner)
+      elif action == '2':
+          player = input("Who did you show the card to? ").strip()
+          card = input("Enter the card: ").strip().capitalize()
+          solver.update(card, player)
+          solver.record_shown(player, [card])
+      elif action == '3':
+          player = input("Which player may have the cards? ").strip()
+          cards = input("What are the possible cards? (comma-separated) ").strip().split(',')
+          cards = [card.strip().capitalize() for card in cards]
+          if player not in solver.other_player_possibilities:
+              solver.other_player_possibilities[player] = cards
+          else:
+              solver.other_player_possibilities[player].extend(cards)
+      elif action == '4':
+          people, weapons, rooms = solver.get_possible_solutions()
+          print("\nPossible solutions:")
+          print("\nSuspects:")
+          for person in people:
+              print(person)
+          print("\nWeapons:")
+          for weapon in weapons:
+              print(weapon)
+          print("\nRooms:")
+          for room in rooms:
+              print(room)
+      elif action == '5':
+          player = input("Enter the player's name: ").strip()
+          solver.check_player_possible_cards(player)
+      elif action == '6':
+          player = input("Enter the player's name: ").strip()
+          if player in solver.shown_to:
+              print(f"I have shown the following cards to {player}:")
+              for card in solver.shown_to[player]:
+                  print(card)
+          else:
+              print(f"No information available for player {player}.")
+      elif action == '7':
+          player = input("Enter the player's name: ").strip()
+          solver.check_other_player_possibilities(player)
+      elif action == '8':
+          print("Exiting...")
+          break
+      else:
+          print("Invalid action. Please try again.")
+
+
+if __name__ == "__main__":
+  main()
